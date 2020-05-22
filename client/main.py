@@ -1,5 +1,6 @@
 import sys
 from .identity_manager import IdManager
+from .server_interface import Server
 
 
 def process_command(cmd, opts):
@@ -23,6 +24,15 @@ def process_command(cmd, opts):
         id = opts[0]
         id_manager = IdManager()
         id_manager.delete(id)
+
+    elif cmd == 'server.register':
+        check_opt_count(1)
+        id = opts[0]
+        id_manager = IdManager()
+        private_key = id_manager.get_key(id)
+        server = Server('localhost', 5000)
+        server.register(id, private_key)
+        # print(verify_signature("its me", signature, private_key.public_key()))
 
     else:
         raise ValueError('Unrecognised command: ' + cmd)

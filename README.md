@@ -40,7 +40,7 @@ Server should:
 
 Publishes some data to the server and associates it with an identity which has been registered previously.
 
-    POST /api/declare
+    POST /api/publish
     
     {
         id : '',
