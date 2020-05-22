@@ -1,8 +1,18 @@
-from flask import Flask, request, jsonify, abort, Response
+from flask import Flask, request, jsonify
 import uuid
-from common.crypto_utils import verify_signature
+from queue import Queue
+from .request_processor import RequestProcessor
 
 app = Flask(__name__)
+
+work_queue = Queue()
+processor = RequestProcessor(work_queue)
+
+
+@app.before_first_request
+def start_up():
+    processor.start()
+
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -11,14 +21,23 @@ def register():
     client_id = request_body.get('clientId')
     signature = request_body.get('signature')
     data = request_body.get('data')
-    public_key = data['publicKey']
+    request_id = str(uuid.uuid4())
 
-    signature_valid = verify_signature(data, signature, public_key)
-    print(signature_valid)
+    work_item = {
+        'type': 'registration',
+        'requestId': request_id,
+        'clientId': client_id,
+        'signature': signature,
+        'data': data
+    }
+
+    work_queue.put(work_item, block=False)
+    # signature_valid = verify_signature(data, signature, public_key)
+    # print(signature_valid)
 
     # meta_data = request_body.get('metaData', {})
     # service.register(public_key, meta_data)
-    return jsonify({'requestId' : str(uuid.uuid4())}), 202
+    return jsonify({'requestId': request_id}), 202
 
 
 
