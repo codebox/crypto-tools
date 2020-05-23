@@ -18,7 +18,7 @@ def start_up():
 @app.route('/api/register', methods=['POST'])
 def register():
     request_body = request.get_json()
-    print(request_body)
+    # print(request_body)
     client_id = get_request_value(request_body, 'clientId')
     signature = get_request_value(request_body, 'signature')
     data = get_request_value(request_body, 'data')
@@ -29,6 +29,7 @@ def register():
         'requestId': request_id,
         'clientId': client_id,
         'signature': signature,
+        'publicKey': data['publicKey'],
         'data': data
     }
 
