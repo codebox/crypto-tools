@@ -21,7 +21,7 @@ class Server:
         }
         signature = sign_data_with_key(data, private_key)
         body = {
-            # 'clientId': client_id,
+            'clientId': client_id,
             'signature': base64.standard_b64encode(signature).decode(ENCODING),
             'data': data
         }

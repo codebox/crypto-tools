@@ -1,7 +1,11 @@
 import sys
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectionError
 from .identity_manager import IdManager
 from .server_interface import Server
+
+
+SERVER_HOST = 'localhost'
+SERVER_PORT = 5000
 
 
 def process_command(cmd, opts):
@@ -38,15 +42,22 @@ def process_command(cmd, opts):
             id = opts[0]
             id_manager = IdManager()
             private_key = id_manager.get_key(id)
-            server = Server('localhost', 5000)
+            server = Server(SERVER_HOST, SERVER_PORT)
             request_id = server.register(id, private_key)
-            return build_result(True, "Registration request for id '{}' was accepted by the server, requestId={}".format(id, request_id))
+            return build_result(True, "Registration request for id '{}' was accepted by the server [{}]".format(id, request_id))
 
         else:
             return build_result(True, "Unrecognised command: '{}'".format(cmd))
 
     except HTTPError as e:
+        return build_result(False, 'Server rejected the request - {}'.format(e))
+
+    except ConnectionError as e:
+        return build_result(False, 'Unable to connect to the http server {}:{} - {}'.format(SERVER_HOST, SERVER_PORT, e))
+
+    except Exception as e:
         return build_result(False, str(e))
+
 
 def show_usage():
     print('usage')
@@ -57,7 +68,7 @@ def process_args(args):
         show_usage()
     else:
         result = process_command(args[1], args[2:])
-        print(result)
+        print(("SUCCESS" if result['ok'] else "ERROR") + ": " + result['message'])
 
 
 if __name__ == '__main__':
@@ -65,4 +76,3 @@ if __name__ == '__main__':
         process_args(sys.argv)
     except ValueError as e:
         print(str(e))
-
