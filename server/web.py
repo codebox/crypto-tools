@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import uuid
 from queue import Queue
 from .request_processor import RequestProcessor
+from .exception import InvalidRequest
 
 app = Flask(__name__)
 
@@ -18,9 +19,9 @@ def start_up():
 def register():
     request_body = request.get_json()
     print(request_body)
-    client_id = request_body.get('clientId')
-    signature = request_body.get('signature')
-    data = request_body.get('data')
+    client_id = get_request_value(request_body, 'clientId')
+    signature = get_request_value(request_body, 'signature')
+    data = get_request_value(request_body, 'data')
     request_id = str(uuid.uuid4())
 
     work_item = {
@@ -40,4 +41,12 @@ def register():
     return jsonify({'requestId': request_id}), 202
 
 
+@app.errorhandler(InvalidRequest)
+def handle_invalid_request(e):
+    return jsonify({'error': str(e)}), 400
 
+
+def get_request_value(request, key):
+    if key in request:
+        return request[key]
+    raise InvalidRequest("Key '{}' missing from request".format(key))

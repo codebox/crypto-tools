@@ -1,4 +1,5 @@
 import sys
+from requests.exceptions import HTTPError
 from .identity_manager import IdManager
 from .server_interface import Server
 
@@ -8,35 +9,44 @@ def process_command(cmd, opts):
         if len(opts) != expected_opt_count:
             raise ValueError('Wrong number of arguments for command "{}", expected {} but found {}'.format(cmd, expected_opt_count, len(opts)))
 
-    if cmd == 'id.create':
-        check_opt_count(1)
-        key_name = opts[0]
-        id_manager = IdManager()
-        id_manager.create(key_name)
+    def build_result(ok, msg):
+        return {'ok': ok, 'message': msg}
 
-    elif cmd == 'id.list':
-        check_opt_count(0)
-        id_manager = IdManager()
-        print(list(id_manager.list()))
+    try:
+        if cmd == 'id.create':
+            check_opt_count(1)
+            id = opts[0]
+            id_manager = IdManager()
+            id_manager.create(id)
+            return build_result(True, "New id '{}' created".format(id))
 
-    elif cmd == 'id.delete':
-        check_opt_count(1)
-        id = opts[0]
-        id_manager = IdManager()
-        id_manager.delete(id)
+        elif cmd == 'id.list':
+            check_opt_count(0)
+            id_manager = IdManager()
+            id_list = list(id_manager.list())
+            return build_result(True, "Found {} identities: {}".format(len(id_list), '\n'.join(id_list)))
 
-    elif cmd == 'server.register':
-        check_opt_count(1)
-        id = opts[0]
-        id_manager = IdManager()
-        private_key = id_manager.get_key(id)
-        server = Server('localhost', 5000)
-        server.register(id, private_key)
-        # print(verify_signature("its me", signature, private_key.public_key()))
+        elif cmd == 'id.delete':
+            check_opt_count(1)
+            id = opts[0]
+            id_manager = IdManager()
+            id_manager.delete(id)
+            return build_result(True, "Id '{}' removed".format(id))
 
-    else:
-        raise ValueError('Unrecognised command: ' + cmd)
+        elif cmd == 'server.register':
+            check_opt_count(1)
+            id = opts[0]
+            id_manager = IdManager()
+            private_key = id_manager.get_key(id)
+            server = Server('localhost', 5000)
+            request_id = server.register(id, private_key)
+            return build_result(True, "Registration request for id '{}' was accepted by the server, requestId={}".format(id, request_id))
 
+        else:
+            return build_result(True, "Unrecognised command: '{}'".format(cmd))
+
+    except HTTPError as e:
+        return build_result(False, str(e))
 
 def show_usage():
     print('usage')
@@ -46,7 +56,8 @@ def process_args(args):
     if len(args) == 1:
         show_usage()
     else:
-        process_command(args[1], args[2:])
+        result = process_command(args[1], args[2:])
+        print(result)
 
 
 if __name__ == '__main__':
