@@ -57,6 +57,13 @@ def process_command(cmd, opts):
             request_id = server.publish(id, private_key, message)
             return build_result(True, "Publication request for id '{}' was accepted by the server [{}]".format(id, request_id))
 
+        elif cmd == 'server.status':
+            check_opt_count(1)
+            request_id = opts[0]
+            server = Server(SERVER_HOST, SERVER_PORT)
+            status = server.query_status(request_id)
+            return build_result(True, "Status of request '{}' was {}".format(request_id, status))
+
         else:
             return build_result(True, "Unrecognised command: '{}'".format(cmd))
 

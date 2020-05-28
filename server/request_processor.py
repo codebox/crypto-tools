@@ -8,8 +8,8 @@ from common.crypto_utils import verify_signature
 
 
 class RequestProcessor:
-    def __init__(self, queue):
-        self.queue = queue
+    def __init__(self, work_queue):
+        self.work_queue = work_queue
         self.message_store = MessageStore()
         self.handlers = [RegistrationHandler(self.message_store), PublicationHandler(self.message_store)]
 
@@ -24,12 +24,12 @@ class RequestProcessor:
 
     def _work(self):
         while True:
-            item = self.queue.get()
-            self._verify_signature(item)
+            self.work_queue.process_next(self._process_item)
 
-            [handler.process(item) for handler in self.handlers if handler.handles(item)]
-
-            self.queue.task_done()
+    def _process_item(self, item):
+        log(LogLevel.INFO, 'Processing item {}'.format(item['requestId']))
+        self._verify_signature(item)
+        [handler.process(item) for handler in self.handlers if handler.handles(item)]
 
     def _get_public_key_for_client_id(self, client_id):
         registrations_for_client = [item for item in self.message_store.messages if item['clientId'] == client_id and item['type'] == 'registration']

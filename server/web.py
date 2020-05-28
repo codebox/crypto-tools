@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import uuid
-from queue import Queue
+from .work_queue import WorkQueue
 from .request_processor import RequestProcessor
 from .exception import InvalidRequest
 from common.logging import log, LogLevel
@@ -8,7 +8,7 @@ import logging
 
 app = Flask(__name__)
 
-work_queue = Queue()
+work_queue = WorkQueue()
 processor = RequestProcessor(work_queue)
 
 LogLevel.currentLevel = LogLevel.DEBUG
@@ -45,7 +45,7 @@ def register():
         'data': data
     }
 
-    work_queue.put(work_item, block=False)
+    work_queue.add(work_item)
     # signature_valid = verify_signature(data, signature, public_key)
     # print(signature_valid)
 
@@ -70,9 +70,16 @@ def publish():
         'data': data
     }
 
-    work_queue.put(work_item, block=False)
+    work_queue.add(work_item)
 
     return jsonify({'requestId': request_id}), 202
+
+
+@app.route('/api/status/<request_id>', methods=['GET'])
+def status(request_id):
+    request_status = work_queue.query(request_id)
+
+    return jsonify({'requestId': request_id, 'status': request_status.name}), 200
 
 
 @app.errorhandler(InvalidRequest)

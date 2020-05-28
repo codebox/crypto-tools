@@ -25,6 +25,9 @@ class Server:
             'message': message
         })
 
+    def query_status(self, request_id):
+        return self._get('status/{}'.format(request_id))
+
     def _sign_and_post(self, client_id, private_key, url_path, data):
         signature = sign_data_with_key(data, private_key)
         body = {
@@ -41,3 +44,11 @@ class Server:
             return response.json()['requestId']
         else:
             raise HTTPError(response.json()['error'])
+
+
+    def _get(self, url_path):
+        response = requests.get("http://{}:{}/api/{}".format(self.host, self.port, url_path))
+        if response.status_code == requests.codes.ok:
+            return response.json()
+        else:
+            raise HTTPError(response.json())
