@@ -13,12 +13,19 @@ class Server:
         self.port = port
 
     def register(self, client_id, private_key):
-        data = {
+        return self._sign_and_post(client_id, private_key, 'register', {
             'publicKey': private_key.public_key().public_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo
             ).decode(ENCODING)
-        }
+        })
+
+    def publish(self, client_id, private_key, message):
+        return self._sign_and_post(client_id, private_key, 'publish', {
+            'message': message
+        })
+
+    def _sign_and_post(self, client_id, private_key, url_path, data):
         signature = sign_data_with_key(data, private_key)
         body = {
             'clientId': client_id,
@@ -26,7 +33,7 @@ class Server:
             'data': data
         }
 
-        return self._post("register", body)
+        return self._post(url_path, body)
 
     def _post(self, url_path, body):
         response = requests.post("http://{}:{}/api/{}".format(self.host, self.port, url_path), json=body)

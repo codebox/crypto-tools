@@ -46,6 +46,17 @@ def process_command(cmd, opts):
             request_id = server.register(id, private_key)
             return build_result(True, "Registration request for id '{}' was accepted by the server [{}]".format(id, request_id))
 
+        elif cmd == 'server.publish':
+            check_opt_count(2)
+            id = opts[0]
+            id_manager = IdManager()
+            private_key = id_manager.get_key(id)
+
+            message = opts[1]
+            server = Server(SERVER_HOST, SERVER_PORT)
+            request_id = server.publish(id, private_key, message)
+            return build_result(True, "Publication request for id '{}' was accepted by the server [{}]".format(id, request_id))
+
         else:
             return build_result(True, "Unrecognised command: '{}'".format(cmd))
 
