@@ -31,6 +31,9 @@ class IdManager:
                     print('Loaded key', key_name)
 
     def create(self, name):
+        if self.get_key(name):
+            raise ValueError('The id "{}" already exists'.format(name))
+
         key =rsa.generate_private_key(
             backend=default_backend(),
             public_exponent=65537,
@@ -58,4 +61,4 @@ class IdManager:
             print('no id {} was found'.format(name))
 
     def get_key(self, name):
-        return self.keys[name]
+        return self.keys.get(name, None)
