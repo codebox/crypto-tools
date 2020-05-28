@@ -1,5 +1,5 @@
 import threading
-
+from common.logging import log, LogLevel
 from server.exception import InvalidSignatureError
 from server.message_store import MessageStore
 from server.handlers.registration_handler import RegistrationHandler
@@ -17,12 +17,11 @@ class RequestProcessor:
     def _verify_signature(self, item):
         if not verify_signature(item['data'], item['signature'], item['publicKey']):
             raise InvalidSignatureError()
-        print('sigok')
+        log(LogLevel.DEBUG, 'Signature for {} ok'.format(item['clientId']))
 
     def _work(self):
         while True:
             item = self.queue.get()
-            print(item)
             self._verify_signature(item)
 
             [handler.process(item) for handler in self.handlers if handler.handles(item)]

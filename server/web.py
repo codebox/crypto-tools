@@ -3,17 +3,27 @@ import uuid
 from queue import Queue
 from .request_processor import RequestProcessor
 from .exception import InvalidRequest
+from common.logging import log, LogLevel
+import logging
 
 app = Flask(__name__)
 
 work_queue = Queue()
 processor = RequestProcessor(work_queue)
 
+LogLevel.currentLevel = LogLevel.DEBUG
+
+flask_log = logging.getLogger('werkzeug')
+flask_log.setLevel(logging.ERROR)
 
 @app.before_first_request
 def start_up():
     processor.start()
 
+@app.after_request
+def after_request_func(response):
+    log(LogLevel.DEBUG, '"{} {}" {}'.format(request.method, request.path, response.status_code))
+    return response
 
 @app.route('/api/register', methods=['POST'])
 def register():
