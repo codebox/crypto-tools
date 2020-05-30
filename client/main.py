@@ -28,7 +28,7 @@ def process_command(cmd, opts):
             check_opt_count(0)
             id_manager = IdManager()
             id_list = list(id_manager.list())
-            return build_result(True, "Found {} identities: {}".format(len(id_list), '\n'.join(id_list)))
+            return build_result(True, "Found {} identities\n{}".format(len(id_list), '\n'.join(map(lambda s: '- ' + s, id_list))))
 
         elif cmd == 'id.delete':
             check_opt_count(1)
