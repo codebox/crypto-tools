@@ -1,6 +1,6 @@
 from os import makedirs, listdir, remove
 from os.path import join, isfile
-
+from common.logging import log, LogLevel
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
@@ -28,7 +28,7 @@ class IdManager:
                         backend=default_backend()
                     )
                     self.keys[key_name] = private_key
-                    print('Loaded key', key_name)
+                    log(LogLevel.DEBUG, 'Loaded key {}'.format(key_name))
 
     def create(self, name):
         if name in self.keys:
@@ -56,9 +56,9 @@ class IdManager:
         pem_file_path = '{}/{}{}'.format(self.key_dir, name, IdManager.key_extension)
         if isfile(pem_file_path):
             remove(pem_file_path)
-            print('removed id: ' + name)
+            log(LogLevel.DEBUG, 'Removed id {}'.format(name))
         else:
-            print('no id {} was found'.format(name))
+            log(LogLevel.WARN, 'No id {} could be found'.format(name))
 
     def get_key(self, name):
         if name not in self.keys:
