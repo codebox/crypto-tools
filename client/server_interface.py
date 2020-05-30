@@ -1,8 +1,10 @@
 import requests
 import base64
+import time
 from cryptography.hazmat.primitives import serialization
 from common.crypto_utils import sign_data_with_key
 from requests.exceptions import HTTPError
+from common.logging import log, LogLevel
 
 ENCODING = 'utf-8'
 
@@ -13,7 +15,7 @@ class Server:
         self.port = port
 
     def register(self, client_id, private_key):
-        return self._sign_and_post(client_id, private_key, 'register', {
+        return self._sign_and_post_and_wait(client_id, private_key, 'register', {
             'publicKey': private_key.public_key().public_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -21,12 +23,21 @@ class Server:
         })
 
     def publish(self, client_id, private_key, message):
-        return self._sign_and_post(client_id, private_key, 'publish', {
+        return self._sign_and_post_and_wait(client_id, private_key, 'publish', {
             'message': message
         })
 
-    def query_status(self, request_id):
+    def _query_status(self, request_id):
         return self._get('status/{}'.format(request_id))
+
+    def _sign_and_post_and_wait(self, client_id, private_key, url_path, data):
+        request_id = self._sign_and_post(client_id, private_key, url_path, data)
+        while True:
+            time.sleep(1)
+            log(LogLevel.DEBUG, 'Polling server...')
+            status = self._query_status(request_id)
+            if status != 'PENDING':
+                return status
 
     def _sign_and_post(self, client_id, private_key, url_path, data):
         signature = sign_data_with_key(data, private_key)

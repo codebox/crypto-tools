@@ -17,7 +17,7 @@ class RequestProcessor:
         threading.Thread(target=self._work, daemon=True).start()
 
     def _verify_signature(self, item):
-        public_key = item.get('publicKey', self._get_public_key_for_client_id(item['clientId']))
+        public_key = item.get('publicKey') if 'publicKey' in item else self._get_public_key_for_client_id(item['clientId'])
         if not verify_signature(item['data'], item['signature'], public_key):
             raise InvalidSignatureError()
         log(LogLevel.DEBUG, 'Signature for {} ok'.format(item['clientId']))

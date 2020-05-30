@@ -2,7 +2,7 @@ import sys
 from requests.exceptions import HTTPError, ConnectionError
 from .identity_manager import IdManager
 from .server_interface import Server
-
+from common.logging import log, LogLevel
 
 SERVER_HOST = 'localhost'
 SERVER_PORT = 5000
@@ -86,11 +86,14 @@ def process_args(args):
         show_usage()
     else:
         result = process_command(args[1], args[2:])
-        print(("SUCCESS" if result['ok'] else "ERROR") + ": " + result['message'])
+        if result['ok']:
+            log(LogLevel.INFO, result['message'])
+        else:
+            log(LogLevel.ERROR, result['message'])
 
 
 if __name__ == '__main__':
     try:
         process_args(sys.argv)
     except ValueError as e:
-        print(str(e))
+        log(LogLevel.ERROR, str(e))
