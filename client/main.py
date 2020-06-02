@@ -46,7 +46,6 @@ def process_command(cmd, opts):
             private_key = id_manager.get_key(id)
             server = Server(SERVER_HOST, SERVER_PORT)
             result = server.register(id, private_key)
-            print(result)
             return build_result(True, "Registration request for id '{}' was accepted by the server [{}]".format(id, result['requestId']))
 
         elif cmd == 'server.publish':

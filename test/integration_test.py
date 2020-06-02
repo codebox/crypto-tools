@@ -179,6 +179,5 @@ class IntegrationTest(unittest.TestCase):
     def _then_id_already_registered_message_shown_for(self, id):
         self._assert_message_logged("The id '{}' has already been registered".format(id))
 
-
 if __name__ == '__main__':
     unittest.main()
