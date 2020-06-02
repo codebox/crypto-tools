@@ -32,7 +32,7 @@ class IdManager:
 
     def create(self, name):
         if name in self.keys:
-            raise ValueError('The id "{}" already exists'.format(name))
+            raise ValueError("The id '{}' already exists".format(name))
 
         key =rsa.generate_private_key(
             backend=default_backend(),
