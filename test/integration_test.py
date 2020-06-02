@@ -104,6 +104,13 @@ class IntegrationTest(unittest.TestCase):
         self._when_register_id(ID_1)
         self._then_id_does_not_exist_message_shown_for(ID_1)
 
+    def test_server_registers_duplicate_id(self):
+        clear_log_messages()
+        self._when_create_id(ID_1)
+        self._when_register_id(ID_1)
+        self._when_register_id(ID_1)
+        self._then_id_already_registered_message_shown_for(ID_1)
+
     def _delete_client_keys(self):
         for key_file in glob.glob('keys/*.pem'):
             self._delete_file_if_exists(key_file)
@@ -168,6 +175,9 @@ class IntegrationTest(unittest.TestCase):
 
     def _then_id_does_not_exist_message_shown_for(self, id):
         self._assert_message_logged("The id '{}' does not exist".format(id))
+
+    def _then_id_already_registered_message_shown_for(self, id):
+        self._assert_message_logged("The id '{}' has already been registered".format(id))
 
 
 if __name__ == '__main__':
