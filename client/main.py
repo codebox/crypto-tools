@@ -45,8 +45,9 @@ def process_command(cmd, opts):
             id_manager = IdManager()
             private_key = id_manager.get_key(id)
             server = Server(SERVER_HOST, SERVER_PORT)
-            request_id = server.register(id, private_key)
-            return build_result(True, "Registration request for id '{}' was accepted by the server [{}]".format(id, request_id))
+            result = server.register(id, private_key)
+            print(result)
+            return build_result(True, "Registration request for id '{}' was accepted by the server [{}]".format(id, result['requestId']))
 
         elif cmd == 'server.publish':
             check_opt_count(2)

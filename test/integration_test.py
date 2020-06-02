@@ -1,4 +1,4 @@
-import unittest, os, glob
+import unittest, os, glob, re
 
 from client.main import process_args
 from server.message_store import MessageStore
@@ -93,6 +93,17 @@ class IntegrationTest(unittest.TestCase):
         self._when_delete_id(ID_1)
         self._then_id_not_deleted_message_shown_for(ID_1)
 
+    def test_server_registers_valid_id(self):
+        clear_log_messages()
+        self._when_create_id(ID_1)
+        self._when_register_id(ID_1)
+        self._then_id_registered_message_shown_for(ID_1)
+
+    def test_server_registers_invalid_id(self):
+        clear_log_messages()
+        self._when_register_id(ID_1)
+        self._then_id_does_not_exist_message_shown_for(ID_1)
+
     def _delete_client_keys(self):
         for key_file in glob.glob('keys/*.pem'):
             self._delete_file_if_exists(key_file)
@@ -120,10 +131,19 @@ class IntegrationTest(unittest.TestCase):
     def _when_delete_id(self, id):
         process_args(['', 'id.delete', id])
 
+    def _when_register_id(self, id):
+        process_args(['', 'server.register', id])
+
     def _assert_message_logged(self, expected_msg):
         matching_messages = [logged_msg for logged_msg in get_log_messages() if logged_msg[1].strip() == expected_msg.strip()]
         if not matching_messages:
             self.fail('No matching message found, expected "{}", existing messages were:\n{}'.format(expected_msg, get_log_messages()))
+
+    def _assert_message_pattern_logged(self, expected_msg_pattern):
+        regex = re.compile(expected_msg_pattern)
+        matching_messages = [logged_msg for logged_msg in get_log_messages() if regex.match(logged_msg[1])]
+        if not matching_messages:
+            self.fail('No matching message found, expected pattern "{}", existing messages were:\n{}'.format(expected_msg_pattern, get_log_messages()))
 
     def _then_no_ids_message_shown(self):
         self._assert_message_logged('Found 0 identities')
@@ -142,6 +162,13 @@ class IntegrationTest(unittest.TestCase):
 
     def _then_id_not_deleted_message_shown_for(self, id):
         self._assert_message_logged("Id '{}' not removed".format(id))
+
+    def _then_id_registered_message_shown_for(self, id):
+        self._assert_message_pattern_logged("Registration request for id '{}' was accepted by the server \[[0-9a-f-]+\]".format(id))
+
+    def _then_id_does_not_exist_message_shown_for(self, id):
+        self._assert_message_logged("The id '{}' does not exist".format(id))
+
 
 if __name__ == '__main__':
     unittest.main()

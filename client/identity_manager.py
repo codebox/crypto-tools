@@ -64,6 +64,6 @@ class IdManager:
 
     def get_key(self, name):
         if name not in self.keys:
-            raise ValueError('The id "{}" does not exist'.format(name))
+            raise ValueError("The id '{}' does not exist".format(name))
 
         return self.keys[name]
