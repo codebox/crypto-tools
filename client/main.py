@@ -34,8 +34,10 @@ def process_command(cmd, opts):
             check_opt_count(1)
             id = opts[0]
             id_manager = IdManager()
-            id_manager.delete(id)
-            return build_result(True, "Id '{}' removed".format(id))
+            if id_manager.delete(id):
+                return build_result(True, "Id '{}' removed".format(id))
+            else:
+                return build_result(False, "Id '{}' not removed".format(id))
 
         elif cmd == 'server.register':
             check_opt_count(1)

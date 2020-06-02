@@ -78,6 +78,20 @@ class IntegrationTest(unittest.TestCase):
         self._then_id_created_message_shown_for(ID_1)
         self._when_create_id(ID_1)
         self._then_id_already_exists_message_shown_for(ID_1)
+        self._when_list_ids()
+        self._then_correct_ids_message_shown_for(ID_1)
+
+    def test_client_deletes_valid_id(self):
+        clear_log_messages()
+        self._when_create_id(ID_1)
+        self._when_create_id(ID_2)
+        self._when_delete_id(ID_1)
+        self._then_id_deleted_message_shown_for(ID_1)
+
+    def test_client_deletes_invalid_id(self):
+        clear_log_messages()
+        self._when_delete_id(ID_1)
+        self._then_id_not_deleted_message_shown_for(ID_1)
 
     def _delete_client_keys(self):
         for key_file in glob.glob('keys/*.pem'):
@@ -103,10 +117,13 @@ class IntegrationTest(unittest.TestCase):
     def _when_create_id(self, id):
         process_args(['', 'id.create', id])
 
+    def _when_delete_id(self, id):
+        process_args(['', 'id.delete', id])
+
     def _assert_message_logged(self, expected_msg):
         matching_messages = [logged_msg for logged_msg in get_log_messages() if logged_msg[1].strip() == expected_msg.strip()]
         if not matching_messages:
-            self.fail('No matching message found, existing messages were:\n{}'.format(get_log_messages()))
+            self.fail('No matching message found, expected "{}", existing messages were:\n{}'.format(expected_msg, get_log_messages()))
 
     def _then_no_ids_message_shown(self):
         self._assert_message_logged('Found 0 identities')
@@ -120,6 +137,11 @@ class IntegrationTest(unittest.TestCase):
     def _then_id_already_exists_message_shown_for(self, id):
         self._assert_message_logged("The id '{}' already exists".format(id))
 
+    def _then_id_deleted_message_shown_for(self, id):
+        self._assert_message_logged("Id '{}' removed".format(id))
+
+    def _then_id_not_deleted_message_shown_for(self, id):
+        self._assert_message_logged("Id '{}' not removed".format(id))
 
 if __name__ == '__main__':
     unittest.main()

@@ -57,8 +57,10 @@ class IdManager:
         if isfile(pem_file_path):
             remove(pem_file_path)
             log(LogLevel.DEBUG, 'Removed id {}'.format(name))
+            return True
         else:
             log(LogLevel.WARN, 'No id {} could be found'.format(name))
+            return False
 
     def get_key(self, name):
         if name not in self.keys:
