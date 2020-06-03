@@ -9,7 +9,9 @@ from common.logging import log, LogLevel
 ENCODING = 'utf-8'
 
 
-class Server:
+class ServerInterface:
+    post_interceptor = None
+
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -50,6 +52,7 @@ class Server:
         return self._post(url_path, body)
 
     def _post(self, url_path, body):
+        body = self._apply_post_interceptor(body)
         response = requests.post("http://{}:{}/api/{}".format(self.host, self.port, url_path), json=body)
         if response.status_code == requests.codes.accepted:
             return response.json()['requestId']
@@ -63,3 +66,6 @@ class Server:
             return response.json()
         else:
             raise HTTPError(response.json())
+
+    def _apply_post_interceptor(self, json_body):
+        return ServerInterface.post_interceptor(json_body) if ServerInterface.post_interceptor else json_body

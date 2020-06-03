@@ -1,7 +1,7 @@
 import sys
 from requests.exceptions import HTTPError, ConnectionError
 from .identity_manager import IdManager
-from .server_interface import Server
+from .server_interface import ServerInterface
 from common.logging import log, LogLevel
 from signal import signal, SIGINT
 
@@ -45,7 +45,7 @@ def process_command(cmd, opts):
             id = opts[0]
             id_manager = IdManager()
             private_key = id_manager.get_key(id)
-            server = Server(SERVER_HOST, SERVER_PORT)
+            server = ServerInterface(SERVER_HOST, SERVER_PORT)
             result = server.register(id, private_key)
             return build_result(True, "Registration request for id '{}' was accepted by the server [{}]".format(id, result['requestId']))
 
@@ -56,14 +56,14 @@ def process_command(cmd, opts):
             private_key = id_manager.get_key(id)
 
             message = opts[1]
-            server = Server(SERVER_HOST, SERVER_PORT)
+            server = ServerInterface(SERVER_HOST, SERVER_PORT)
             request_id = server.publish(id, private_key, message)
             return build_result(True, "Publication request for id '{}' was accepted by the server [{}]".format(id, request_id))
 
         elif cmd == 'server.status':
             check_opt_count(1)
             request_id = opts[0]
-            server = Server(SERVER_HOST, SERVER_PORT)
+            server = ServerInterface(SERVER_HOST, SERVER_PORT)
             status = server.query_status(request_id)
             return build_result(True, "Status of request '{}' was {}".format(request_id, status))
 
@@ -78,7 +78,6 @@ def process_command(cmd, opts):
 
     except Exception as e:
         return build_result(False, str(e))
-
 
 def show_usage():
     print('usage')

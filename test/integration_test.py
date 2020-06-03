@@ -1,7 +1,8 @@
-import unittest, os, glob, re, time
+import unittest, os, glob, re, time, json
 from server.main import server_manager
 
 from client.main import process_args
+from client.server_interface import ServerInterface
 from server.message_store import MessageStore
 from common.logging import get_log_messages, clear_log_messages, LogLevel
 
@@ -28,6 +29,7 @@ class IntegrationTest(unittest.TestCase):
         self._delete_client_keys()
         self._delete_server_data()
         self._stop_server()
+        ServerInterface.post_interceptor = None
 
     @classmethod
     def tearDownClass(cls):
@@ -98,11 +100,13 @@ class IntegrationTest(unittest.TestCase):
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
         self._then_id_registered_message_shown_for(ID_1)
+        self._then_registration_record_saved_for(ID_1)
 
     def test_server_registers_invalid_id(self):
         self._start_server()
         self._when_register_id(ID_1)
         self._then_id_does_not_exist_message_shown_for(ID_1)
+        self._then_registration_record_not_saved_for(ID_1)
 
     def test_server_registers_duplicate_id(self):
         self._start_server()
@@ -110,6 +114,14 @@ class IntegrationTest(unittest.TestCase):
         self._when_register_id(ID_1)
         self._when_register_id(ID_1)
         self._then_id_already_registered_message_shown_for(ID_1)
+        self._then_registration_record_saved_for(ID_1)
+
+    def test_server_registers_valid_id_with_bad_signature(self):
+        self._start_server()
+        self._when_create_id(ID_1)
+        self._when_register_id_with_bad_signature(ID_1)
+        self._then_bad_signature_message_shown_for(ID_1)
+        self._then_registration_record_not_saved_for(ID_1)
 
     def _start_server(self):
         server_manager.start()
@@ -146,6 +158,13 @@ class IntegrationTest(unittest.TestCase):
 
     def _when_register_id(self, id):
         process_args(['', 'server.register', id])
+
+    def _when_register_id_with_bad_signature(self, id):
+        def invalidate_signature(data):
+            data['signature'] = data['signature'].lower()
+            return data
+        ServerInterface.post_interceptor = invalidate_signature
+        self._when_register_id(id)
 
     def _assert_message_logged(self, expected_msg):
         matching_messages = [logged_msg for logged_msg in get_log_messages() if logged_msg[1].strip() == expected_msg.strip()]
@@ -184,6 +203,23 @@ class IntegrationTest(unittest.TestCase):
 
     def _then_id_already_registered_message_shown_for(self, id):
         self._assert_message_logged("The id '{}' has already been registered".format(id))
+
+    def _then_registration_record_saved_for(self, id):
+        self._assert_server_record_match_count({'type': 'registration', 'clientId': id}, 1)
+
+    def _then_registration_record_not_saved_for(self, id):
+        self._assert_server_record_match_count({'type': 'registration', 'clientId': id}, 0)
+
+    def _then_bad_signature_message_shown_for(self, id):
+        self._assert_message_logged("Bad message signature for client_id '{}'".format(id))
+
+    def _assert_server_record_match_count(self, search_criteria, expected_count):
+        if os.path.exists(SERVER_FILE):
+            with open(SERVER_FILE, 'r') as f:
+                messages = json.load(f)
+                self.assertTrue(len([msg for msg in messages if all(search_criteria[k] == msg[k] for k in search_criteria.keys())]) == expected_count)
+        else:
+            self.assertEqual(expected_count, 0)
 
 if __name__ == '__main__':
     unittest.main()
