@@ -1,10 +1,13 @@
-from bottle import Bottle, ServerAdapter, request
+from bottle import Bottle, ServerAdapter, request, HTTPResponse
 import uuid, json
 from .exception import InvalidRequest
 
 from common.logging import log, LogLevel
-from wsgiref.simple_server import make_server
+from wsgiref.simple_server import make_server, WSGIRequestHandler
 
+class QuietHandler(WSGIRequestHandler):
+    def log_request(*args, **kwargs):
+        pass
 
 class Adapter(ServerAdapter):
     def __init__ (self, host, port):
@@ -14,6 +17,7 @@ class Adapter(ServerAdapter):
         self.options = {}
 
     def run(self, handler):
+        self.options['handler_class'] = QuietHandler
         self.server = make_server(self.host, self.port, handler, **self.options)
         self.server.serve_forever()
 
@@ -56,7 +60,7 @@ class WebServer:
         }
 
         self.work_queue.add(work_item)
-        return json.dumps({'requestId': request_id}), 202
+        return HTTPResponse(status=202, body=json.dumps({'requestId': request_id}))
 
     def _publish(self):
         request_body = request.json
@@ -75,12 +79,12 @@ class WebServer:
 
         self.work_queue.add(work_item)
 
-        return json.dumps({'requestId': request_id}), 202
+        return HTTPResponse(status=202, body=json.dumps({'requestId': request_id}))
 
     def _status(self, request_id):
         request_status = self.work_queue.query(request_id)
 
-        return json.dumps({'requestId': request_id, 'status': request_status.name}), 200
+        return HTTPResponse(status=200, body=json.dumps({'requestId': request_id, 'status': request_status.name}))
 
     def _get_request_value(self, request, key):
         if key in request:
