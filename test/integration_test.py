@@ -66,7 +66,6 @@ class IntegrationTest(unittest.TestCase):
         self._then_correct_ids_message_shown_for(ID_2, ID_1)
 
     def test_client_creates_valid_ids(self):
-        clear_log_messages()
         self._when_create_id(ID_1)
         self._then_id_created_message_shown_for(ID_1)
         self._when_list_ids()
@@ -77,7 +76,6 @@ class IntegrationTest(unittest.TestCase):
         self._then_correct_ids_message_shown_for(ID_2, ID_1)
 
     def test_client_creates_invalid_id(self):
-        clear_log_messages()
         self._when_create_id(ID_1)
         self._then_id_created_message_shown_for(ID_1)
         self._when_create_id(ID_1)
@@ -86,32 +84,27 @@ class IntegrationTest(unittest.TestCase):
         self._then_correct_ids_message_shown_for(ID_1)
 
     def test_client_deletes_valid_id(self):
-        clear_log_messages()
         self._when_create_id(ID_1)
         self._when_create_id(ID_2)
         self._when_delete_id(ID_1)
         self._then_id_deleted_message_shown_for(ID_1)
 
     def test_client_deletes_invalid_id(self):
-        clear_log_messages()
         self._when_delete_id(ID_1)
         self._then_id_not_deleted_message_shown_for(ID_1)
 
     def test_server_registers_valid_id(self):
-        clear_log_messages()
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
         self._then_id_registered_message_shown_for(ID_1)
 
     def test_server_registers_invalid_id(self):
-        clear_log_messages()
         self._start_server()
         self._when_register_id(ID_1)
         self._then_id_does_not_exist_message_shown_for(ID_1)
 
     def test_server_registers_duplicate_id(self):
-        clear_log_messages()
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
