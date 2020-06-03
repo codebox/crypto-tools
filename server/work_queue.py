@@ -24,6 +24,7 @@ class WorkQueue:
         except Exception as ex :
             log(LogLevel.ERROR, str(ex))
             self.request_statuses[request_id] = RequestStatus.FAILURE
+            print('======',self.request_statuses)
 
     def query(self, id):
         return self.request_statuses.get(id, RequestStatus.UNKNOWN)

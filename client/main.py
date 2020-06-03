@@ -3,6 +3,7 @@ from requests.exceptions import HTTPError, ConnectionError
 from .identity_manager import IdManager
 from .server_interface import Server
 from common.logging import log, LogLevel
+from signal import signal, SIGINT
 
 SERVER_HOST = 'localhost'
 SERVER_PORT = 5000

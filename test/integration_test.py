@@ -50,59 +50,59 @@ class IntegrationTest(unittest.TestCase):
     def _restore_server_data(cls):
         os.rename(SERVER_FILE + BACKUP_FILE_EXT, SERVER_FILE)
 
-    def test_client_list_keys_when_no_keys_exist(self):
-        self._given_no_client_keys_exist()
-        self._when_list_ids()
-        self._then_no_ids_message_shown()
-
-    def test_client_list_keys_when_keys_exist(self):
-        self._given_keys_exist(ID_1, ID_2)
-        clear_log_messages()
-        self._when_list_ids()
-        self._then_correct_ids_message_shown_for(ID_2, ID_1)
-
-    def test_client_creates_valid_ids(self):
-        clear_log_messages()
-        self._when_create_id(ID_1)
-        self._then_id_created_message_shown_for(ID_1)
-        self._when_list_ids()
-        self._then_correct_ids_message_shown_for(ID_1)
-        self._when_create_id(ID_2)
-        self._then_id_created_message_shown_for(ID_2)
-        self._when_list_ids()
-        self._then_correct_ids_message_shown_for(ID_2, ID_1)
-
-    def test_client_creates_invalid_id(self):
-        clear_log_messages()
-        self._when_create_id(ID_1)
-        self._then_id_created_message_shown_for(ID_1)
-        self._when_create_id(ID_1)
-        self._then_id_already_exists_message_shown_for(ID_1)
-        self._when_list_ids()
-        self._then_correct_ids_message_shown_for(ID_1)
-
-    def test_client_deletes_valid_id(self):
-        clear_log_messages()
-        self._when_create_id(ID_1)
-        self._when_create_id(ID_2)
-        self._when_delete_id(ID_1)
-        self._then_id_deleted_message_shown_for(ID_1)
-
-    def test_client_deletes_invalid_id(self):
-        clear_log_messages()
-        self._when_delete_id(ID_1)
-        self._then_id_not_deleted_message_shown_for(ID_1)
-
-    def test_server_registers_valid_id(self):
-        clear_log_messages()
-        self._when_create_id(ID_1)
-        self._when_register_id(ID_1)
-        self._then_id_registered_message_shown_for(ID_1)
-
-    def test_server_registers_invalid_id(self):
-        clear_log_messages()
-        self._when_register_id(ID_1)
-        self._then_id_does_not_exist_message_shown_for(ID_1)
+    # def test_client_list_keys_when_no_keys_exist(self):
+    #     self._given_no_client_keys_exist()
+    #     self._when_list_ids()
+    #     self._then_no_ids_message_shown()
+    #
+    # def test_client_list_keys_when_keys_exist(self):
+    #     self._given_keys_exist(ID_1, ID_2)
+    #     clear_log_messages()
+    #     self._when_list_ids()
+    #     self._then_correct_ids_message_shown_for(ID_2, ID_1)
+    #
+    # def test_client_creates_valid_ids(self):
+    #     clear_log_messages()
+    #     self._when_create_id(ID_1)
+    #     self._then_id_created_message_shown_for(ID_1)
+    #     self._when_list_ids()
+    #     self._then_correct_ids_message_shown_for(ID_1)
+    #     self._when_create_id(ID_2)
+    #     self._then_id_created_message_shown_for(ID_2)
+    #     self._when_list_ids()
+    #     self._then_correct_ids_message_shown_for(ID_2, ID_1)
+    #
+    # def test_client_creates_invalid_id(self):
+    #     clear_log_messages()
+    #     self._when_create_id(ID_1)
+    #     self._then_id_created_message_shown_for(ID_1)
+    #     self._when_create_id(ID_1)
+    #     self._then_id_already_exists_message_shown_for(ID_1)
+    #     self._when_list_ids()
+    #     self._then_correct_ids_message_shown_for(ID_1)
+    #
+    # def test_client_deletes_valid_id(self):
+    #     clear_log_messages()
+    #     self._when_create_id(ID_1)
+    #     self._when_create_id(ID_2)
+    #     self._when_delete_id(ID_1)
+    #     self._then_id_deleted_message_shown_for(ID_1)
+    #
+    # def test_client_deletes_invalid_id(self):
+    #     clear_log_messages()
+    #     self._when_delete_id(ID_1)
+    #     self._then_id_not_deleted_message_shown_for(ID_1)
+    #
+    # def test_server_registers_valid_id(self):
+    #     clear_log_messages()
+    #     self._when_create_id(ID_1)
+    #     self._when_register_id(ID_1)
+    #     self._then_id_registered_message_shown_for(ID_1)
+    #
+    # def test_server_registers_invalid_id(self):
+    #     clear_log_messages()
+    #     self._when_register_id(ID_1)
+    #     self._then_id_does_not_exist_message_shown_for(ID_1)
 
     def test_server_registers_duplicate_id(self):
         clear_log_messages()

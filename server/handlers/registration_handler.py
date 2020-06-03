@@ -9,4 +9,7 @@ class RegistrationHandler(BaseHandler):
         return details['type'] == 'registration'
 
     def process(self, details):
+        print(details)
+        if filter(lambda msg: msg['type'] == 'registration' and msg['clientId'] == details['clientId'], self.message_store.messages):
+            raise ValueError("The id '{}' has already been registered".format(details['clientId']))
         self.message_store.add(details)
