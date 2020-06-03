@@ -23,7 +23,7 @@ class Adapter(ServerAdapter):
 
     def stop(self):
         self.server.shutdown()
-
+        self.server.server_close()
 
 class WebServer:
     def __init__(self, host, port, work_queue):
@@ -36,7 +36,7 @@ class WebServer:
         self._app.run(server=self.server_adapter)
 
     def stop(self):
-        self.server_adapter.server.shutdown()
+        self.server_adapter.stop()
 
     def _set_routes(self):
         self._app.route('/api/register', method="POST", callback=self._register)
@@ -96,12 +96,6 @@ class WebServer:
 #     log(LogLevel.DEBUG, '"{} {}" {}'.format(request.method, request.path, response.status_code))
 #     return response
 #
-
-
-
-
-
-
 
 
 # @app.errorhandler(InvalidRequest)

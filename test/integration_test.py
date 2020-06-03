@@ -1,4 +1,5 @@
-import unittest, os, glob, re
+import unittest, os, glob, re, time
+from server.main import server_manager
 
 from client.main import process_args
 from server.message_store import MessageStore
@@ -26,6 +27,7 @@ class IntegrationTest(unittest.TestCase):
         clear_log_messages()
         self._delete_client_keys()
         self._delete_server_data()
+        self._stop_server()
 
     @classmethod
     def tearDownClass(cls):
@@ -39,7 +41,8 @@ class IntegrationTest(unittest.TestCase):
 
     @classmethod
     def _backup_server_data(cls):
-        os.rename(SERVER_FILE, SERVER_FILE + BACKUP_FILE_EXT)
+        if os.path.exists(SERVER_FILE):
+            os.rename(SERVER_FILE, SERVER_FILE + BACKUP_FILE_EXT)
 
     @classmethod
     def _restore_client_keys(cls):
@@ -48,7 +51,8 @@ class IntegrationTest(unittest.TestCase):
 
     @classmethod
     def _restore_server_data(cls):
-        os.rename(SERVER_FILE + BACKUP_FILE_EXT, SERVER_FILE)
+        if os.path.exists(SERVER_FILE + BACKUP_FILE_EXT):
+            os.rename(SERVER_FILE + BACKUP_FILE_EXT, SERVER_FILE)
 
     def test_client_list_keys_when_no_keys_exist(self):
         self._given_no_client_keys_exist()
@@ -95,21 +99,30 @@ class IntegrationTest(unittest.TestCase):
 
     def test_server_registers_valid_id(self):
         clear_log_messages()
+        self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
         self._then_id_registered_message_shown_for(ID_1)
 
     def test_server_registers_invalid_id(self):
         clear_log_messages()
+        self._start_server()
         self._when_register_id(ID_1)
         self._then_id_does_not_exist_message_shown_for(ID_1)
 
     def test_server_registers_duplicate_id(self):
         clear_log_messages()
+        self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
         self._when_register_id(ID_1)
         self._then_id_already_registered_message_shown_for(ID_1)
+
+    def _start_server(self):
+        server_manager.start()
+
+    def _stop_server(self):
+        server_manager.stop()
 
     def _delete_client_keys(self):
         for key_file in glob.glob('keys/*.pem'):
