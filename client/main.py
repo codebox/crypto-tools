@@ -57,8 +57,8 @@ def process_command(cmd, opts):
 
             message = opts[1]
             server = ServerInterface(SERVER_HOST, SERVER_PORT)
-            request_id = server.publish(id, private_key, message)
-            return build_result(True, "Publication request for id '{}' was accepted by the server [{}]".format(id, request_id))
+            result = server.publish(id, private_key, message)
+            return build_result(True, "Publication request for id '{}' was accepted by the server [{}]".format(id, result['requestId']))
 
         elif cmd == 'server.status':
             check_opt_count(1)

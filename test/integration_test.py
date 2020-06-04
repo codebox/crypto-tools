@@ -10,6 +10,7 @@ BACKUP_FILE_EXT = '.bak'
 SERVER_FILE = MessageStore.file_path
 ID_1 = 'test1'
 ID_2 = 'test2'
+MSG = 'hello'
 
 def log_info(msg):
     return (LogLevel.INFO, msg)
@@ -123,6 +124,14 @@ class IntegrationTest(unittest.TestCase):
         self._then_bad_signature_message_shown_for(ID_1)
         self._then_registration_record_not_saved_for(ID_1)
 
+    def test_server_publishes_valid_message(self):
+        self._start_server()
+        self._when_create_id(ID_1)
+        self._when_register_id(ID_1)
+        self._when_publish_message(ID_1, MSG)
+        self._then_published_message_shown_for(ID_1)
+        self._then_publication_record_saved_for(ID_1, MSG)
+
     def _start_server(self):
         server_manager.start()
 
@@ -158,6 +167,9 @@ class IntegrationTest(unittest.TestCase):
 
     def _when_register_id(self, id):
         process_args(['', 'server.register', id])
+
+    def _when_publish_message(self, id, msg):
+        process_args(['', 'server.publish', id, msg])
 
     def _when_register_id_with_bad_signature(self, id):
         def invalidate_signature(data):
@@ -213,13 +225,20 @@ class IntegrationTest(unittest.TestCase):
     def _then_bad_signature_message_shown_for(self, id):
         self._assert_message_logged("Bad message signature for client_id '{}'".format(id))
 
+    def _then_published_message_shown_for(self, id):
+        self._assert_message_pattern_logged("Publication request for id '{}' was accepted by the server \[[0-9a-f-]+\]".format(id))
+
+    def _then_publication_record_saved_for(self, id, msg):
+        self._assert_server_record_match_count({'type': 'publication', 'clientId': id, 'data': {'message': msg}}, 1)
+
     def _assert_server_record_match_count(self, search_criteria, expected_count):
         if os.path.exists(SERVER_FILE):
             with open(SERVER_FILE, 'r') as f:
                 messages = json.load(f)
-                self.assertTrue(len([msg for msg in messages if all(search_criteria[k] == msg[k] for k in search_criteria.keys())]) == expected_count)
+                self.assertEqual(len([msg for msg in messages if all(search_criteria[k] == msg[k] for k in search_criteria.keys())]), expected_count)
         else:
             self.assertEqual(expected_count, 0)
+
 
 if __name__ == '__main__':
     unittest.main()
