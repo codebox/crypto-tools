@@ -5,6 +5,7 @@ from cryptography.hazmat.primitives import serialization
 from common.crypto_utils import sign_data_with_key
 from requests.exceptions import HTTPError
 from common.logging import log, LogLevel
+from urllib.parse import quote
 
 ENCODING = 'utf-8'
 
@@ -28,6 +29,9 @@ class ServerInterface:
         return self._sign_and_post_and_wait(client_id, private_key, 'publish', {
             'message': message
         })
+
+    def query_messages(self, key_value_pairs):
+        return self._get('query?{}'.format('&'.join(map(lambda p: '{}={}'.format(quote(p[0]), quote(p[1])), key_value_pairs))))
 
     def _query_status(self, request_id):
         return self._get('status/{}'.format(request_id))

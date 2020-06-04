@@ -1,4 +1,4 @@
-import sys
+import sys, json
 from requests.exceptions import HTTPError, ConnectionError
 from .identity_manager import IdManager
 from .server_interface import ServerInterface
@@ -67,6 +67,12 @@ def process_command(cmd, opts):
             status = server.query_status(request_id)
             return build_result(True, "Status of request '{}' was {}".format(request_id, status))
 
+        elif cmd == 'server.query':
+            server = ServerInterface(SERVER_HOST, SERVER_PORT)
+            key_value_pairs = [pair.split('=') for pair in opts]
+            matches = server.query_messages(key_value_pairs)
+            return build_result(True, '\n'.join(['{} matches found'.format(len(matches))] + [format_message(msg) for msg in matches]))
+
         else:
             return build_result(True, "Unrecognised command: '{}'".format(cmd))
 
@@ -78,6 +84,14 @@ def process_command(cmd, opts):
 
     except Exception as e:
         return build_result(False, str(e))
+
+def format_message(msg):
+    if msg['type'] == 'publication':
+        return '[{}]: {}'.format(msg['clientId'], msg['data']['message'])
+    elif msg['type'] == 'registration':
+        return 'Registration for [{}]'.format(msg['clientId'])
+    else:
+        return json.dumps(msg, indent=4)
 
 def show_usage():
     print('usage')

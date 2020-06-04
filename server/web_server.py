@@ -1,5 +1,7 @@
-from bottle import Bottle, ServerAdapter, request, HTTPResponse
+from bottle import Bottle, ServerAdapter, request, HTTPResponse, response
 import uuid, json
+
+from server.message_store import MessageStore
 from .exception import InvalidRequest
 
 from common.logging import log, LogLevel
@@ -42,6 +44,7 @@ class WebServer:
         self._app.route('/api/register', method="POST", callback=self._register)
         self._app.route('/api/publish', method="POST", callback=self._publish)
         self._app.route('/api/status/<request_id>', method="GET", callback=self._status)
+        self._app.route('/api/query', method="GET", callback=self._query)
 
     def _register(self):
         request_body = request.json
@@ -86,20 +89,34 @@ class WebServer:
 
         return HTTPResponse(status=200, body=json.dumps({'requestId': request_id, 'status': request_status.name}))
 
+    def _query(self):
+        def build_query_fn(key, value):
+            key_path = key.split('.')
+
+            def query_fn(obj):
+                target_obj = obj
+                for key_part in key_path:
+                    if key_part in target_obj:
+                        target_obj = target_obj[key_part]
+                    else:
+                        return False
+                return target_obj == value
+
+            return query_fn
+
+        query_fns = []
+        for k, v in request.query.decode().items():
+            query_fns.append(build_query_fn(k, v))
+
+        matching_messages = list(filter(lambda msg: all([qf(msg) for qf in query_fns]), self._get_messages()))
+        response.content_type = 'application/json'
+        return HTTPResponse(status=200, body=json.dumps(matching_messages), content_type='application/json')
+
     def _get_request_value(self, request, key):
         if key in request:
             return request[key]
         raise InvalidRequest("Key '{}' missing from request".format(key))
 
-# @app.after_request
-# def after_request_func(response):
-#     log(LogLevel.DEBUG, '"{} {}" {}'.format(request.method, request.path, response.status_code))
-#     return response
-#
-
-
-# @app.errorhandler(InvalidRequest)
-# def handle_invalid_request(e):
-#     return jsonify({'error': str(e)}), 400
-
+    def _get_messages(self):
+        return MessageStore().get_all()
 
