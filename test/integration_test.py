@@ -103,13 +103,13 @@ class IntegrationTest(unittest.TestCase):
         self._then_id_registered_message_shown_for(ID_1)
         self._then_registration_record_saved_for(ID_1)
 
-    def test_server_registers_invalid_id(self):
+    def test_server_does_not_register_invalid_id(self):
         self._start_server()
         self._when_register_id(ID_1)
         self._then_id_does_not_exist_message_shown_for(ID_1)
         self._then_registration_record_not_saved_for(ID_1)
 
-    def test_server_registers_duplicate_id(self):
+    def test_server_does_not_register_duplicate_id(self):
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
@@ -117,7 +117,7 @@ class IntegrationTest(unittest.TestCase):
         self._then_id_already_registered_message_shown_for(ID_1)
         self._then_registration_record_saved_for(ID_1)
 
-    def test_server_registers_valid_id_with_bad_signature(self):
+    def test_server_does_not_register_valid_id_with_bad_signature(self):
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id_with_bad_signature(ID_1)
@@ -131,6 +131,14 @@ class IntegrationTest(unittest.TestCase):
         self._when_publish_message(ID_1, MSG)
         self._then_published_message_shown_for(ID_1)
         self._then_publication_record_saved_for(ID_1, MSG)
+
+    def test_server_does_not_publish_message_with_invalid_signature(self):
+        self._start_server()
+        self._when_create_id(ID_1)
+        self._when_register_id(ID_1)
+        self._when_publish_message_with_bad_signature(ID_1, MSG)
+        self._then_bad_signature_message_shown_for(ID_1)
+        self._then_publication_record_not_saved_for(ID_1, MSG)
 
     def _start_server(self):
         server_manager.start()
@@ -171,12 +179,17 @@ class IntegrationTest(unittest.TestCase):
     def _when_publish_message(self, id, msg):
         process_args(['', 'server.publish', id, msg])
 
+    def _invalidate_signature(self, data):
+        data['signature'] = data['signature'].lower()
+        return data
+
     def _when_register_id_with_bad_signature(self, id):
-        def invalidate_signature(data):
-            data['signature'] = data['signature'].lower()
-            return data
-        ServerInterface.post_interceptor = invalidate_signature
+        ServerInterface.post_interceptor = self._invalidate_signature
         self._when_register_id(id)
+
+    def _when_publish_message_with_bad_signature(self, id, msg):
+        ServerInterface.post_interceptor = self._invalidate_signature
+        self._when_publish_message(id, msg)
 
     def _assert_message_logged(self, expected_msg):
         matching_messages = [logged_msg for logged_msg in get_log_messages() if logged_msg[1].strip() == expected_msg.strip()]
@@ -230,6 +243,9 @@ class IntegrationTest(unittest.TestCase):
 
     def _then_publication_record_saved_for(self, id, msg):
         self._assert_server_record_match_count({'type': 'publication', 'clientId': id, 'data': {'message': msg}}, 1)
+
+    def _then_publication_record_not_saved_for(self, id, msg):
+        self._assert_server_record_match_count({'type': 'publication', 'clientId': id, 'data': {'message': msg}}, 0)
 
     def _assert_server_record_match_count(self, search_criteria, expected_count):
         if os.path.exists(SERVER_FILE):
