@@ -4,3 +4,4 @@ env
 keys
 *.pyc
 store.json
+public_key_cache.json

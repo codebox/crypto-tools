@@ -1,13 +1,32 @@
 import sys, json
 from requests.exceptions import HTTPError, ConnectionError
+
+from client.client_cache import PublicKeyCache
+from common.crypto_utils import verify_signature
 from .identity_manager import IdManager
 from .server_interface import ServerInterface
 from common.logging import log, LogLevel
-from signal import signal, SIGINT
 
 SERVER_HOST = 'localhost'
 SERVER_PORT = 5000
 
+
+def get_public_key_for_id(id):
+    cache = PublicKeyCache()
+    if not cache.get(id):
+        server = ServerInterface(SERVER_HOST, SERVER_PORT)
+        id_details = server.query_messages([('type', 'registration'), ('clientId', id)])
+        if not id_details:
+            raise ValueError('No id {} was found on the server'.format(id))
+        if not verify_signature(id_details[0]['data'], id_details[0]['signature'], id_details[0]['publicKey']):
+            raise ValueError('Invalid signature in registration details for {}'.format(id))
+        cache.add(id, id_details[0]['publicKey'])
+
+    return cache.get(id)
+
+def message_signature_ok(msg):
+    public_key = get_public_key_for_id(msg['clientId'])
+    return verify_signature(msg['data'], msg['signature'], public_key)
 
 def process_command(cmd, opts):
     def check_opt_count(expected_opt_count):
@@ -70,7 +89,8 @@ def process_command(cmd, opts):
         elif cmd == 'server.query':
             server = ServerInterface(SERVER_HOST, SERVER_PORT)
             key_value_pairs = [pair.split('=') for pair in opts]
-            matches = server.query_messages(key_value_pairs)
+            matches = [msg for msg in server.query_messages(key_value_pairs) if message_signature_ok(msg)]
+
             return build_result(True, '\n'.join(['{} matches found'.format(len(matches))] + [format_message(msg) for msg in matches]))
 
         else:
