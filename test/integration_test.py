@@ -108,6 +108,11 @@ class IntegrationTest(unittest.TestCase):
         self._then_id_registered_message_shown_for(ID_1)
         self._then_registration_record_saved_for(ID_1)
 
+    def test_register_id_when_server_down_server(self):
+        self._when_create_id(ID_1)
+        self._when_register_id(ID_1)
+        self._then_server_down_message_shown()
+
     def test_register_non_existent_id_with_server(self):
         self._start_server()
         self._when_register_id(ID_1)
@@ -248,6 +253,9 @@ class IntegrationTest(unittest.TestCase):
 
     def _then_bad_command_message_shown(self):
         self._assert_message_logged("Unrecognised command: '{}'".format(BAD_COMMAND))
+
+    def _then_server_down_message_shown(self):
+        self._assert_message_pattern_logged("Unable to connect to the http server localhost:5000 .*")
 
     def _then_published_message_shown_for(self, id):
         self._assert_message_pattern_logged("Publication request for id '{}' was accepted by the server \[[0-9a-f-]+\]".format(id))
