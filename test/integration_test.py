@@ -11,6 +11,7 @@ SERVER_FILE = MessageStore.file_path
 ID_1 = 'test1'
 ID_2 = 'test2'
 MSG = 'hello'
+BAD_COMMAND = 'lobster.telephone'
 
 def log_info(msg):
     return (LogLevel.INFO, msg)
@@ -57,18 +58,22 @@ class IntegrationTest(unittest.TestCase):
         if os.path.exists(SERVER_FILE + BACKUP_FILE_EXT):
             os.rename(SERVER_FILE + BACKUP_FILE_EXT, SERVER_FILE)
 
-    def test_client_list_keys_when_no_keys_exist(self):
+    def test_unknown_client_command(self):
+        self._when_unknown_command()
+        self._then_bad_command_message_shown()
+
+    def test_list_keys_when_no_keys_exist(self):
         self._given_no_client_keys_exist()
         self._when_list_ids()
         self._then_no_ids_message_shown()
 
-    def test_client_list_keys_when_keys_exist(self):
+    def test_list_keys_when_keys_exist(self):
         self._given_keys_exist(ID_1, ID_2)
         clear_log_messages()
         self._when_list_ids()
         self._then_correct_ids_message_shown_for(ID_2, ID_1)
 
-    def test_client_creates_valid_ids(self):
+    def test_ids_created(self):
         self._when_create_id(ID_1)
         self._then_id_created_message_shown_for(ID_1)
         self._when_list_ids()
@@ -78,7 +83,7 @@ class IntegrationTest(unittest.TestCase):
         self._when_list_ids()
         self._then_correct_ids_message_shown_for(ID_2, ID_1)
 
-    def test_client_creates_invalid_id(self):
+    def test_create_duplicate_id(self):
         self._when_create_id(ID_1)
         self._then_id_created_message_shown_for(ID_1)
         self._when_create_id(ID_1)
@@ -86,30 +91,30 @@ class IntegrationTest(unittest.TestCase):
         self._when_list_ids()
         self._then_correct_ids_message_shown_for(ID_1)
 
-    def test_client_deletes_valid_id(self):
+    def test_delete_id(self):
         self._when_create_id(ID_1)
         self._when_create_id(ID_2)
         self._when_delete_id(ID_1)
         self._then_id_deleted_message_shown_for(ID_1)
 
-    def test_client_deletes_invalid_id(self):
+    def test_delete_non_existent_id(self):
         self._when_delete_id(ID_1)
         self._then_id_not_deleted_message_shown_for(ID_1)
 
-    def test_server_registers_valid_id(self):
+    def test_register_id_with_server(self):
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
         self._then_id_registered_message_shown_for(ID_1)
         self._then_registration_record_saved_for(ID_1)
 
-    def test_server_does_not_register_invalid_id(self):
+    def test_register_non_existent_id_with_server(self):
         self._start_server()
         self._when_register_id(ID_1)
         self._then_id_does_not_exist_message_shown_for(ID_1)
         self._then_registration_record_not_saved_for(ID_1)
 
-    def test_server_does_not_register_duplicate_id(self):
+    def test_register_duplicate_id_with_server(self):
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
@@ -117,14 +122,14 @@ class IntegrationTest(unittest.TestCase):
         self._then_id_already_registered_message_shown_for(ID_1)
         self._then_registration_record_saved_for(ID_1)
 
-    def test_server_does_not_register_valid_id_with_bad_signature(self):
+    def test_register_id_with_bad_signature(self):
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id_with_bad_signature(ID_1)
         self._then_bad_signature_message_shown_for(ID_1)
         self._then_registration_record_not_saved_for(ID_1)
 
-    def test_server_publishes_valid_message(self):
+    def test_publishes_message_to_server(self):
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
@@ -132,7 +137,7 @@ class IntegrationTest(unittest.TestCase):
         self._then_published_message_shown_for(ID_1)
         self._then_publication_record_saved_for(ID_1, MSG)
 
-    def test_server_does_not_publish_message_with_invalid_signature(self):
+    def test_publishes_message_with_invalid_signature_to_server(self):
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
@@ -163,6 +168,9 @@ class IntegrationTest(unittest.TestCase):
     def _given_keys_exist(self, *keys):
         for key in keys:
             process_args(['', 'id.create', key])
+
+    def _when_unknown_command(self):
+        process_args(['', BAD_COMMAND])
 
     def _when_list_ids(self):
         process_args(['', 'id.list'])
@@ -237,6 +245,9 @@ class IntegrationTest(unittest.TestCase):
 
     def _then_bad_signature_message_shown_for(self, id):
         self._assert_message_logged("Bad message signature for client_id '{}'".format(id))
+
+    def _then_bad_command_message_shown(self):
+        self._assert_message_logged("Unrecognised command: '{}'".format(BAD_COMMAND))
 
     def _then_published_message_shown_for(self, id):
         self._assert_message_pattern_logged("Publication request for id '{}' was accepted by the server \[[0-9a-f-]+\]".format(id))
