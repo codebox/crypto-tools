@@ -10,7 +10,8 @@ BACKUP_FILE_EXT = '.bak'
 SERVER_FILE = MessageStore.file_path
 ID_1 = 'test1'
 ID_2 = 'test2'
-MSG = 'hello'
+MSG_1 = 'hello'
+MSG_2 = 'where am i?'
 BAD_COMMAND = 'lobster.telephone'
 
 def log_info(msg):
@@ -138,17 +139,47 @@ class IntegrationTest(unittest.TestCase):
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
-        self._when_publish_message(ID_1, MSG)
+        self._when_publish_message(ID_1, MSG_1)
         self._then_published_message_shown_for(ID_1)
-        self._then_publication_record_saved_for(ID_1, MSG)
+        self._then_publication_record_saved_for(ID_1, MSG_1)
 
     def test_publishes_message_with_invalid_signature_to_server(self):
         self._start_server()
         self._when_create_id(ID_1)
         self._when_register_id(ID_1)
-        self._when_publish_message_with_bad_signature(ID_1, MSG)
+        self._when_publish_message_with_bad_signature(ID_1, MSG_1)
         self._then_bad_signature_message_shown_for(ID_1)
-        self._then_publication_record_not_saved_for(ID_1, MSG)
+        self._then_publication_record_not_saved_for(ID_1, MSG_1)
+
+    def test_query_returns_no_matches(self):
+        self._start_server()
+        self._when_query_for(('type', 'ographic'))
+        self._then_no_matches_found_message_is_shown()
+
+    def test_query_returns_matches(self):
+        self._start_server()
+        self._when_create_id(ID_1)
+        self._when_register_id(ID_1)
+        self._when_publish_message(ID_1, MSG_1)
+        self._when_publish_message(ID_1, MSG_2)
+        self._when_create_id(ID_2)
+        self._when_register_id(ID_2)
+        self._when_publish_message(ID_2, MSG_1)
+
+        self._when_query_for()
+        self._then_matches_found_message_is_shown_for(
+            'Registration for [{}]'.format(ID_1),
+            '[{}]: {}'.format(ID_1, MSG_1),
+            '[{}]: {}'.format(ID_1, MSG_2),
+            'Registration for [{}]'.format(ID_2),
+            '[{}]: {}'.format(ID_2, MSG_1),
+        )
+
+        self._when_query_for(('type', 'registration'))
+        self._then_matches_found_message_is_shown_for('Registration for [{}]'.format(ID_1), 'Registration for [{}]'.format(ID_2))
+
+        self._when_query_for(('clientId', ID_1), ('data.message', MSG_1))
+        self._then_matches_found_message_is_shown_for('[{}]: {}'.format(ID_1, MSG_1))
 
     def _start_server(self):
         server_manager.start()
@@ -191,6 +222,9 @@ class IntegrationTest(unittest.TestCase):
 
     def _when_publish_message(self, id, msg):
         process_args(['', 'server.publish', id, msg])
+
+    def _when_query_for(self, *criteria):
+        process_args(['', 'server.query'] + list(map(lambda p: '{}={}'.format(p[0], p[1]), criteria)))
 
     def _invalidate_signature(self, data):
         data['signature'] = data['signature'].lower()
@@ -254,11 +288,17 @@ class IntegrationTest(unittest.TestCase):
     def _then_bad_command_message_shown(self):
         self._assert_message_logged("Unrecognised command: '{}'".format(BAD_COMMAND))
 
+    def _then_matches_found_message_is_shown_for(self, *expected_msgs):
+        self._assert_message_logged('\n'.join([str(len(expected_msgs)) + ' matches found'] + list(expected_msgs)))
+
     def _then_server_down_message_shown(self):
         self._assert_message_pattern_logged("Unable to connect to the http server localhost:5000 .*")
 
     def _then_published_message_shown_for(self, id):
         self._assert_message_pattern_logged("Publication request for id '{}' was accepted by the server \[[0-9a-f-]+\]".format(id))
+
+    def _then_no_matches_found_message_is_shown(self):
+        self._assert_message_logged("0 matches found")
 
     def _then_publication_record_saved_for(self, id, msg):
         self._assert_server_record_match_count({'type': 'publication', 'clientId': id, 'data': {'message': msg}}, 1)
