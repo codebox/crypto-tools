@@ -59,7 +59,6 @@ class ServerInterface:
         else:
             raise HTTPError(response.json()['error'])
 
-
     def _get(self, url_path):
         response = requests.get("http://{}:{}/api/{}".format(self.host, self.port, url_path))
         if response.status_code == requests.codes.ok:
